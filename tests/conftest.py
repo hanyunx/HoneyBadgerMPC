@@ -29,6 +29,9 @@ def random_files_prefix(sharedata_tmpdir):
 def triples_files_prefix(sharedata_tmpdir):
     return os.path.join(sharedata_tmpdir, 'test_triples')
 
+@fixture
+def bits_files_prefix(sharedata_tmpdir):
+    return os.path.join(sharedata_tmpdir, 'test_bits')
 
 @fixture
 # TODO check whether there could be a better name for this fixture,
@@ -57,6 +60,14 @@ def random_polys(request, galois_field, polynomial):
     t = request.param['t']
     return [polynomial.random(t, random.randint(0, galois_field.modulus-1))
             for _ in range(k)]
+
+
+@fixture(params=({'k': 1000, 't': 1},))
+def bit_polys(request, polynomial):
+    k = request.param['k']
+    t = request.param['t']
+    bit = random.randint(0, 1)
+    return [polynomial.random(t, bit) for _ in range(k)]
 
 
 @fixture(params=(1000,))
@@ -93,6 +104,14 @@ def random_shares_files(request, galois_field, random_polys, random_files_prefix
     n = request.param['N']
     t = request.param['t']
     write_polys(random_files_prefix, galois_field.modulus, n, t, random_polys)
+
+
+@fixture(params=({'N': 3, 't': 1},))
+def bits_shares_files(request, galois_field, bit_polys, zeros_files_prefix):
+    from honeybadgermpc.mpc import write_polys
+    n = request.param['N']
+    t = request.param['t']
+    write_polys(bits_files_prefix, galois_field.modulus, n, t, bit_polys)
 
 
 @fixture(params=({'N': 3, 't': 1},))
