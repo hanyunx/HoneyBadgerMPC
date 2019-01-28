@@ -24,6 +24,7 @@ class BatchReconstructionFailed(Exception):
 zeros_files_prefix = 'sharedata/test_zeros'
 triples_files_prefix = 'sharedata/test_triples'
 random_files_prefix = 'sharedata/test_random'
+bits_files_prefix = 'sharedata/test_bits'
 
 
 class Mpc(object):
@@ -82,6 +83,11 @@ class Mpc(object):
         filename = f'{triples_files_prefix}-{self.myid}.share'
         if os.path.exists(filename):
             self._triples = iter(self.read_shares(open(filename)))
+
+        self._bits = []
+        filename = f'{bits_files_prefix}-{self.myid}.share'
+        if os.path.exists(filename):
+            self._bits = iter(self.read_shares(open(filename)))
 
     # Access to preprocessing data
     def get_triple(self):
@@ -401,6 +407,13 @@ def generate_test_randoms(prefix, k, n, t):
         polys.append(Poly.random(t))
     write_polys(prefix, Field.modulus, n, t, polys)
 
+def generate_test_bits(prefix, k, N, t):
+    polys = []
+    for j in range(k):
+        bit = random.randint(0, 1)
+        polys.append(Poly.random(t, bit))
+    # print("``` poly ```", polys)
+    write_polys(prefix, Field.modulus, N, t, polys)
 
 ###############
 # Test programs

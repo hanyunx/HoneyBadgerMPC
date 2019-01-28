@@ -107,7 +107,7 @@ def random_shares_files(request, galois_field, random_polys, random_files_prefix
 
 
 @fixture(params=({'N': 3, 't': 1},))
-def bits_shares_files(request, galois_field, bit_polys, zeros_files_prefix):
+def bits_shares_files(request, galois_field, bit_polys, bits_files_prefix):
     from honeybadgermpc.mpc import write_polys
     n = request.param['N']
     t = request.param['t']
