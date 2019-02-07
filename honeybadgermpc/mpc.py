@@ -21,6 +21,15 @@ class BatchReconstructionFailed(Exception):
     pass
 
 
+<<<<<<< HEAD
+=======
+zeros_files_prefix = 'sharedata/test_zeros'
+triples_files_prefix = 'sharedata/test_triples'
+random_files_prefix = 'sharedata/test_random'
+bits_files_prefix = 'sharedata/test_bits'
+
+
+>>>>>>> 1d05c769b40b970b8de358beb1af6a9eb5066017
 class Mpc(object):
 
     def __init__(self, sid, n, t, myid, pid, send, recv, prog, mixin_ops, **prog_args):
@@ -65,6 +74,46 @@ class Mpc(object):
 
         self.Share, self.ShareArray = share_in_context(self)
 
+<<<<<<< HEAD
+=======
+        # Preprocessing elements
+        filename = f'{zeros_files_prefix}-{self.myid}.share'
+        self._zeros = []
+        if os.path.exists(filename):
+            self._zeros = iter(self.read_shares(open(filename)))
+
+        self._rands = []
+        filename = f'{random_files_prefix}-{self.myid}.share'
+        if os.path.exists(filename):
+            self._rands = iter(self.read_shares(open(filename)))
+
+        self._triples = []
+        filename = f'{triples_files_prefix}-{self.myid}.share'
+        if os.path.exists(filename):
+            self._triples = iter(self.read_shares(open(filename)))
+
+        self._bits = []
+        filename = f'{bits_files_prefix}-{self.myid}.share'
+        if os.path.exists(filename):
+            self._bits = iter(self.read_shares(open(filename)))
+
+    # Access to preprocessing data
+    def get_triple(self):
+        a = next(self._triples)
+        b = next(self._triples)
+        ab = next(self._triples)
+        return a, b, ab
+
+    def get_rand(self):
+        return next(self._rands)
+
+    def get_zero(self):
+        return next(self._zeros)
+
+    def get_bit(self):
+        return next(self._bits)
+
+>>>>>>> 1d05c769b40b970b8de358beb1af6a9eb5066017
     async def open_share(self, share):
         # Choose the shareid based on the order this is called
         shareid = len(self._openings)
