@@ -1,4 +1,4 @@
-from honeybadgermpc.elliptic_curve import Jubjub, Point
+from honeybadgermpc.elliptic_curve import Jubjub, Point, Ideal
 from honeybadgermpc.mpc import Mpc
 import asyncio
 
@@ -74,10 +74,10 @@ class SharedPoint(object):
         return str(self)
 
     async def neg(self):
-        return await SharedPoint.create(self.context,
-                                        self.context.field(-1) * self.xs,
-                                        self.ys,
-                                        self.curve)
+        return SharedPoint(self.context,
+                           self.context.field(-1) * self.xs,
+                           self.ys,
+                           self.curve)
 
     async def add(self, other: 'SharedPoint') -> 'SharedPoint':
         if isinstance(other, SharedIdeal):
@@ -104,7 +104,7 @@ class SharedPoint(object):
         # y3 = ((y1*y2) + (x1*x2)) / (1 - d*x1*x2*y1*y2)
         y3 = (y_prod + x_prod) / (one - d_prod)
 
-        return await SharedPoint.create(self.context, x3, y3, self.curve)
+        return SharedPoint(self.context, x3, y3, self.curve)
 
     async def sub(self, other: 'SharedPoint') -> 'SharedPoint':
         return await self.add(await other.neg())
@@ -173,10 +173,10 @@ class SharedPoint(object):
         x = (2 * x_ * y_) / x_denom
         y = (y_sq - ax_sq) / (self.context.field(2) - x_denom)
 
-        return await SharedPoint.create(self.context,
-                                        x,
-                                        y,
-                                        self.curve)
+        return SharedPoint(self.context,
+                           x,
+                           y,
+                           self.curve)
 
 
 class SharedIdeal(SharedPoint):
@@ -219,3 +219,41 @@ class SharedIdeal(SharedPoint):
 
     async def double(self):
         return self
+
+
+async def share_mul(context: Mpc, bs: list, p: Point) -> SharedPoint:
+    """
+    The multiplication of the share of a field element and a point
+    e.g. [x]P -> [X], where P is a point on the given elliptic curve
+    x is the bitwise shared value,
+    starting from the least significant bit.
+
+    NOTE: This is an affine version.
+    bs := [[b0], [b1], ... [bK]], then bs * P can be broken down into
+    [b0] * (2^0 * P) + [b1] * (2^1 * P) .... + [bK] * (2^K * P)
+
+    For each term [bi] * (2^i * P), we compute its x, y coordinates seperately.
+    Let P2i := (2^i * P), and we have identity = (0, 1), then
+        x = [b_i] * (P2i.x - identity.x) + identity.x
+          = [b_i] * P2i.x
+        y = [b_i] * (P2i.y - identity.y) + identity.y
+          = [b_i] * (P2i.y - 1) + 1
+    So we get the SharedPoint of each term.
+    """
+    if isinstance(p, Ideal):
+        return SharedIdeal(p.curve)
+
+    terms = []
+    for i in range(len(bs)):
+        p2i = (2**i) * p
+        term = SharedPoint(context,
+                           p2i.x * bs[i],
+                           (p2i.y - 1) * bs[i] + p.curve.Field(1),
+                           p.curve)
+        terms.append(term)
+
+    accum = terms[0]
+    for i in terms[1:]:
+        accum = await accum.add(i)
+
+    return accum
