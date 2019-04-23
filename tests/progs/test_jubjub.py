@@ -136,7 +136,6 @@ async def test_shared_point_neg(test_preprocessing, test_runner):
     async def _prog(context):
         shared_points = [SharedPoint.from_point(context, p) for p in TEST_POINTS]
         actual_negated = [SharedPoint.from_point(context, -p) for p in TEST_POINTS]
-
         shared_negated = [s.neg() for s in shared_points]
 
         zipped = zip(actual_negated, shared_negated)
@@ -177,7 +176,7 @@ async def test_shared_point_sub(test_preprocessing, test_runner):
         actual, result = await asyncio.gather(
             asyncio.gather(*[p.sub(p) for p in shared_points]),
             asyncio.gather(*[p1.add(p2)
-                             for p1, p2 in zip(shared_points, actual_negated)]))
+                           for p1, p2 in zip(shared_points, actual_negated)]))
 
         assert all(await asyncio.gather(
             *[shared_point_equals(a, r) for a, r in zip(actual, result)]))
@@ -226,22 +225,24 @@ async def test_share_mul(test_preprocessing, test_runner):
 
     async def _prog(context):
         p = TEST_POINTS[1]
-        p_ = SharedPoint.from_point(context, p)
         multiplier_ = [test_preprocessing.elements.get_bit(context)
                        for i in range(bit_length)]
         multiplier = Jubjub.Field(0)
         for i in range(bit_length):
             multiplier += (2**i) * multiplier_[i]
         multiplier = await multiplier.open()
+        p_mul = int(multiplier) * p
 
-        p1_, p2_ = await asyncio.gather(
-            share_mul(context, multiplier_, p),
-            p_.mul(int(multiplier)))
+        # Compute share_mul
+        p1_ = await share_mul(context, multiplier_, p)
+        px, py = await asyncio.gather(p1_.xs.open(), p1_.ys.open())
+
+        # Assertation
         if multiplier == Jubjub.Field(0):
-            px, py = await asyncio.gather(p1_.xs.open(), p1_.ys.open())
             assert (px, py) == (Jubjub.Field(0), Jubjub.Field(1))
         else:
-            assert await shared_point_equals(p1_, p2_)
+            assert px == p_mul.x
+            assert py == p_mul.y
 
         q1_ = await share_mul(context, multiplier_, Ideal(TEST_CURVE))
         q2_ = SharedIdeal(TEST_CURVE)
