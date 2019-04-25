@@ -25,7 +25,10 @@ async def mimc_mpc(context, x, k):
     # iterating the round function ROUND times
     inp = x
     for ctr in range(ROUND):
-        inp = await cubing_share(inp + (k + ctr))
+        # print("\ntype(k)", type(k))
+        # print("\ntype(ctr)", type(ctr))
+        # print("\ntype(inp)", type(inp))
+        inp = await cubing_share((k + context.field(ctr)) + inp)
 
     return inp + k
 
