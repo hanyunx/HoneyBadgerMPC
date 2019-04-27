@@ -94,7 +94,7 @@ class SharedPoint(object):
         # y3 = ((y1*y2) + (x1*x2)) / (1 - d*x1*x2*y1*y2)
         y3 = (y_prod + x_prod) / (one - d_prod)
 
-        return SharedPoint(self.context, x3, y3, self.curve)
+        return SharedPoint(self.context, await x3, await y3, self.curve)
 
     async def sub(self, other: 'SharedPoint') -> 'SharedPoint':
         return await self.add(other.neg())
@@ -162,7 +162,7 @@ class SharedPoint(object):
         x = (2 * x_ * y_) / x_denom
         y = (y_sq - ax_sq) / (self.context.field(2) - x_denom)
 
-        return SharedPoint(self.context, x, y, self.curve)
+        return SharedPoint(self.context, await x, await y, self.curve)
 
 
 class SharedIdeal(SharedPoint):
@@ -232,15 +232,13 @@ async def share_mul(context: Mpc, bs: list, p: Point) -> SharedPoint:
     terms = []
     p2i = p
     for i in range(len(bs)):
-        term = SharedPoint(context,
-                           p2i.x * bs[i],
-                           (p2i.y - 1) * bs[i] + p.curve.Field(1),
-                           p.curve)
-        terms.append(term)
+        x = p2i.x * bs[i]
+        y = (p2i.y - 1) * bs[i] + p.curve.Field(1)
+        terms.append(SharedPoint(context, x, y, p.curve))
         p2i = p2i.double()
 
     accum = terms[0]
-    for i in terms[1:]:
-        accum = await accum.add(i)
+    for term in terms[1:]:
+        accum = await accum.add(term)
 
     return accum
